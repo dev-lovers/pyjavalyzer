@@ -1,0 +1,21 @@
+# Ignore arquivos Python compilados
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore arquivos de ambiente virtual
+venv/
+.env/
+
+# Ignore arquivos de configuração do IDE
+.vscode/
+.idea/
+
+# Ignore arquivos de logs
+*.log
+
+# Ignore arquivos de sistema (macOS)
+.DS_Store
+
+# Ignore testes e resultados temporários
+tests/__pycache__/
