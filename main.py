@@ -1,5 +1,9 @@
 import re
 from collections import defaultdict
+from tabulate import tabulate
+from colorama import Fore, Style, init
+
+init(autoreset=True)
 
 # Definição das expressões regulares para os tokens
 token_specification = [
@@ -59,15 +63,42 @@ def build_symbol_table(tokens):
 
 def print_tokens(tokens):
     print("Lista de Tokens:")
+    token_list = []
     for token in tokens:
-        print(f"Type: {token['type']}, Value: '{token['value']}', Linha: {token['line']}")
+        color = {
+            'KEYWORD': Fore.BLUE,
+            'IDENTIFIER': Fore.GREEN,
+            'NUMBER': Fore.MAGENTA,
+            'OPERATOR': Fore.RED,
+            'ASSIGNMENT': Fore.YELLOW,
+            'DELIMITER': Fore.CYAN,
+            'DOT': Fore.WHITE,
+            'STRING': Fore.LIGHTMAGENTA_EX,
+            'COMMENT': Fore.LIGHTBLACK_EX,
+            'BRACKET': Fore.LIGHTCYAN_EX
+        }.get(token['type'], Style.RESET_ALL)
+        
+        token_list.append([
+            f"{color}{token['type']}{Style.RESET_ALL}",
+            f"{color}{token['value']}{Style.RESET_ALL}",
+            f"{token['line']}"
+        ])
+    
+    print(tabulate(token_list, headers=["Type", "Value", "Line"], tablefmt="fancy_grid"))
 
 def print_symbol_table(symbol_table):
     print("\nTabela de Símbolos:")
+    symbol_list = []
     for symbol, info in symbol_table.items():
-        print(f"Symbol: '{symbol}', Occurrences: {info['count']}, Lines: {info['lines']}")
+        symbol_list.append([
+            symbol,
+            info['count'],
+            ', '.join(map(str, info['lines']))
+        ])
+    
+    print(tabulate(symbol_list, headers=["Symbol", "Occurrences", "Lines"], tablefmt="fancy_grid"))
 
-# Teste do analisador léxico com um arquivo Java
+# Lendo o conteúdo de um arquivo Java para análise léxica
 with open('examples/complexExample.java', 'r') as file:
     code = file.read()
 
