@@ -24,7 +24,7 @@ Este projeto implementa um analisador léxico em Python que lê arquivos `.java`
 3. **Ativar o ambiente virtual:**
 
    ```sh
-   venv/Scripts/activate
+   venv\Scripts\activate
    ```
 
 4. **Instale as dependências:**
