@@ -1,29 +1,24 @@
 import re
-from collections import defaultdict
 from tabulate import tabulate
-from colorama import Fore, Style, init
+from colorama import Fore, Style
 
-init(autoreset=True)
-
-# Definição das expressões regulares para os tokens
-token_specification = [
-    ('KEYWORD', r'\b(class|public|static|void|if|else|int|float|return|for|while)\b'),
-    ('IDENTIFIER', r'\b[a-zA-Z_][a-zA-Z_0-9]*\b'),
-    ('NUMBER', r'\b\d+\b'),
-    ('OPERATOR', r'[\+\-*/%&|<>=!]+'),
-    ('ASSIGNMENT', r'='),
-    ('DELIMITER', r'[()\{\};,]'),
-    ('DOT', r'\.'),
-    ('STRING', r'\".*?\"'),
-    ('COMMENT', r'//.*?$|/\*.*?\*/'),
-    ('BRACKET', r'[\[\]]'), 
-    ('SKIP', r'[ \t\n]+'),
-    ('MISMATCH', r'.'),
-]
-
-def tokenize(code):
+# Função de Tokenização
+def tokenize(code, symbol_table):
     tokens = []
     line_number = 1
+    # Definição das expressões regulares dos tokens
+    token_specification = [
+        ('KEYWORD', r'\b(?:public|class|static|void|int|float)\b'),
+        ('IDENTIFIER', r'[A-Za-z_]\w*'),
+        ('NUMBER', r'\b\d+\b'),
+        ('OPERATOR', r'[+*/=-]'),
+        ('DELIMITER', r'[{};,()]'),
+        ('DOT', r'\.'),
+        ('BRACKET', r'[\[\]]'),
+        ('SKIP', r'[ \t\n]+'),
+        ('MISMATCH', r'.')  # Qualquer outro caractere não esperado
+    ]
+    
     token_re = '|'.join(f'(?P<{name}>{regex})' for name, regex in token_specification)
     
     for match in re.finditer(token_re, code):
@@ -36,31 +31,33 @@ def tokenize(code):
         elif kind == 'MISMATCH':
             raise RuntimeError(f'{value!r} inesperado na linha {line_number}')
         else:
-            tokens.append({
+            token = {
                 'type': kind,
                 'value': value,
                 'line': line_number
-            })
+            }
 
+            if kind == 'IDENTIFIER':
+                # Verifica se o identificador já existe na tabela de símbolos
+                if value not in symbol_table:
+                    symbol_table[value] = {
+                        'count': 0,
+                        'lines': []
+                    }
+                symbol_table[value]['count'] += 1
+                if line_number not in symbol_table[value]['lines']:
+                    symbol_table[value]['lines'].append(line_number)
+                
+                # Adiciona referência ao token, apontando para o índice na tabela de símbolos
+                token['symbol_table_index'] = list(symbol_table.keys()).index(value)
+            
+            tokens.append(token)
+        
         line_number += value.count('\n')
     
     return tokens
 
-def build_symbol_table(tokens):
-    symbol_table = defaultdict(lambda: {'count': 0, 'lines': []})
-    
-    for token in tokens:
-        if token['type'] == 'IDENTIFIER':
-            symbol_info = symbol_table[token['value']]
-            symbol_info['count'] += 1
-            if token['line'] not in symbol_info['lines']:
-                symbol_info['lines'].append(token['line'])
-    
-    # Convertendo o defaultdict para um dicionário comum, ordenando as chaves
-    sorted_symbols = dict(sorted(symbol_table.items()))
-    
-    return sorted_symbols
-
+# Função para imprimir a lista de tokens
 def print_tokens(tokens):
     print("Lista de Tokens:")
     token_list = []
@@ -70,40 +67,59 @@ def print_tokens(tokens):
             'IDENTIFIER': Fore.GREEN,
             'NUMBER': Fore.MAGENTA,
             'OPERATOR': Fore.RED,
-            'ASSIGNMENT': Fore.YELLOW,
             'DELIMITER': Fore.CYAN,
             'DOT': Fore.WHITE,
-            'STRING': Fore.LIGHTMAGENTA_EX,
-            'COMMENT': Fore.LIGHTBLACK_EX,
             'BRACKET': Fore.LIGHTCYAN_EX
         }.get(token['type'], Style.RESET_ALL)
-        
-        token_list.append([
-            f"{color}{token['type']}{Style.RESET_ALL}",
-            f"{color}{token['value']}{Style.RESET_ALL}",
-            f"{token['line']}"
-        ])
-    
-    print(tabulate(token_list, headers=["Type", "Value", "Line"], tablefmt="fancy_grid"))
 
+        if token['type'] == 'IDENTIFIER':
+            token_list.append([
+                f"{color}{token['type']}{Style.RESET_ALL}",
+                f"{color}{token['value']}{Style.RESET_ALL}",
+                f"{token['line']}",
+                f"{token.get('symbol_table_index', '-')}"  # Mostra a referência para a tabela de símbolos
+            ])
+        else:
+            token_list.append([
+                f"{color}{token['type']}{Style.RESET_ALL}",
+                f"{color}{token['value']}{Style.RESET_ALL}",
+                f"{token['line']}"
+            ])
+
+    print(tabulate(token_list, headers=["Type", "Value", "Line", "Symbol Table Ref"], tablefmt="fancy_grid"))
+
+# Função para imprimir a tabela de símbolos
 def print_symbol_table(symbol_table):
     print("\nTabela de Símbolos:")
     symbol_list = []
-    for symbol, info in symbol_table.items():
-        symbol_list.append([
-            symbol,
-            info['count'],
-            ', '.join(map(str, info['lines']))
-        ])
-    
+    for i, (symbol, data) in enumerate(symbol_table.items()):
+        symbol_list.append([symbol, data['count'], ", ".join(map(str, data['lines']))])
+
     print(tabulate(symbol_list, headers=["Symbol", "Occurrences", "Lines"], tablefmt="fancy_grid"))
 
-# Lendo o conteúdo de um arquivo Java para análise léxica
-with open('examples/complexExample.java', 'r') as file:
-    code = file.read()
+# Função para ler arquivo .java
+def read_java_file(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            return file.read()
+    except FileNotFoundError:
+        print(f"Erro: O arquivo {file_path} não foi encontrado.")
+        return None
+    
+if __name__ == "__main__":
+    # Solicita o caminho do arquivo Java
+    file_path = input("Digite o caminho do arquivo .java: ")
+    
+    # Lê o arquivo .java
+    code = read_java_file(file_path)
+    
+    if code is not None:
+        # Inicializa a tabela de símbolos
+        symbol_table = {}
 
-tokens = tokenize(code)
-symbol_table = build_symbol_table(tokens)
+        # Realiza a tokenização
+        tokens = tokenize(code, symbol_table)
 
-print_tokens(tokens)
-print_symbol_table(symbol_table)
+        # Imprime os tokens e a tabela de símbolos
+        print_tokens(tokens)
+        print_symbol_table(symbol_table)
