@@ -8,15 +8,16 @@ def tokenize(code, symbol_table):
     line_number = 1
     # Definição das expressões regulares dos tokens
     token_specification = [
-        ('KEYWORD', r'\b(?:public|class|static|void|int|float)\b'),
+        ('KEYWORD', r'\b(?:public|class|static|void|int|float|boolean)\b'),
         ('IDENTIFIER', r'[A-Za-z_]\w*'),
         ('NUMBER', r'\b\d+\b'),
-        ('OPERATOR', r'[+*/=-]'),
+        ('OPERATOR', r'(<|>|<=|>=|==|!=|[+*/=%-])'),
         ('DELIMITER', r'[{};,()]'),
         ('DOT', r'\.'),
         ('BRACKET', r'[\[\]]'),
+        ('STRING', r'"[^"\\]*(?:\\.[^"\\]*)*"'),
         ('SKIP', r'[ \t\n]+'),
-        ('MISMATCH', r'.')  # Qualquer outro caractere não esperado
+        ('MISMATCH', r'.')
     ]
     
     token_re = '|'.join(f'(?P<{name}>{regex})' for name, regex in token_specification)
@@ -69,7 +70,8 @@ def print_tokens(tokens):
             'OPERATOR': Fore.RED,
             'DELIMITER': Fore.CYAN,
             'DOT': Fore.WHITE,
-            'BRACKET': Fore.LIGHTCYAN_EX
+            'BRACKET': Fore.LIGHTCYAN_EX,
+            'STRING': Fore.YELLOW
         }.get(token['type'], Style.RESET_ALL)
 
         if token['type'] == 'IDENTIFIER':
