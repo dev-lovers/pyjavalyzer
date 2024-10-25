@@ -19,3 +19,6 @@ venv/
 
 # Ignore testes e resultados temporários
 tests/__pycache__/
+
+# Ignore pasta output e seus conteúdos
+output/
