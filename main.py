@@ -4,6 +4,19 @@ from tabulate import tabulate  # Importa a função tabulate para formatar tabel
 from colorama import Fore, Style  # Importa o módulo colorama para coloração de texto no terminal
 
 def tokenize(code, symbol_table):
+    """
+    Tokeniza o código Java passado como string.
+
+    Args:
+        code (str): O código Java a ser analisado.
+        symbol_table (dict): Um dicionário para armazenar informações sobre identificadores encontrados.
+
+    Returns:
+        list: Uma lista de tokens encontrados no código.
+    
+    Raises:
+        RuntimeError: Se houver um erro de sintaxe no código.
+    """
     tokens = []  # Lista para armazenar tokens
     line_number = 1  # Contador de linhas
     # Definição das especificações de tokens com expressões regulares
@@ -27,7 +40,7 @@ def tokenize(code, symbol_table):
 
     # Combina todas as expressões regulares em uma única expressão
     token_re = '|'.join(f'(?P<{name}>{regex})' for name, regex in token_specification)
-    
+
     # Itera sobre as correspondências encontradas no código
     for match in re.finditer(token_re, code):
         kind = match.lastgroup  # Tipo de token
@@ -62,11 +75,18 @@ def tokenize(code, symbol_table):
                 
                 token['symbol_table_index'] = list(symbol_table.keys()).index(value)  # Adiciona índice na tabela de símbolos
 
-            tokens.append(token)  # Adiciona o token à lista de tokens
+            tokens.append(token)  # Adiciona o token à lista
 
     return tokens  # Retorna a lista de tokens
 
 def print_tokens(tokens):
+    """
+    Imprime a lista de tokens formatados.
+
+    Args:
+        tokens (list): A lista de tokens a serem impressos.
+    """
+    print()  # Adiciona uma linha em branco
     print("Lista de Tokens:")  # Imprime título
     token_list = []  # Lista para armazenar os tokens formatados
     # Define as cores para cada tipo de token
@@ -103,7 +123,13 @@ def print_tokens(tokens):
     print(tabulate(token_list, headers=["Type", "Value", "Line", "Symbol Table Ref"], tablefmt="fancy_grid"))
 
 def print_symbol_table(symbol_table):
-    print()
+    """
+    Imprime a tabela de símbolos formatada.
+
+    Args:
+        symbol_table (dict): A tabela de símbolos a ser impressa.
+    """
+    print()  # Adiciona uma linha em branco
     print("Tabela de Símbolos:")  # Imprime título
     symbol_list = []  # Lista para armazenar informações da tabela de símbolos
     # Itera sobre a tabela de símbolos
@@ -115,14 +141,33 @@ def print_symbol_table(symbol_table):
     print(tabulate(symbol_list, headers=["Symbol", "Occurrences", "Lines"], tablefmt="fancy_grid"))
 
 def read_java_file(file_path):
+    """
+    Lê o conteúdo de um arquivo Java.
+
+    Args:
+        file_path (str): O caminho do arquivo a ser lido.
+
+    Returns:
+        str: O conteúdo do arquivo se encontrado, ou None se houver erro.
+    """
     try:
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()  # Retorna o conteúdo do arquivo
     except FileNotFoundError:
-        print(f"Erro: O arquivo {file_path} não foi encontrado.")  # Mensagem de erro se o arquivo não for encontrado
+        print(f"Erro: O arquivo '{file_path}' não foi encontrado.")  # Mensagem de erro se o arquivo não for encontrado
+        return None
+    except Exception as e:
+        print(f"Erro ao ler o arquivo '{file_path}': {str(e)}")  # Mensagem de erro para outros erros
         return None
 
 def generate_markdown(tokens, symbol_table):
+    """
+    Gera um arquivo Markdown contendo a lista de tokens e a tabela de símbolos.
+
+    Args:
+        tokens (list): A lista de tokens a ser escrita no arquivo.
+        symbol_table (dict): A tabela de símbolos a ser escrita no arquivo.
+    """
     output_dir = "output"  # Diretório de saída
     os.makedirs(output_dir, exist_ok=True)  # Cria o diretório se não existir
 
@@ -139,46 +184,38 @@ def generate_markdown(tokens, symbol_table):
         # Adiciona tokens à tabela no markdown
         for token in tokens:
             if token['type'] == 'IDENTIFIER':
-                ref = f"{token.get('symbol_table_index', '-')}"
-
+                ref = f"{token.get('symbol_table_index', '-')} "
             else:
-                ref = "-"
+                ref = '-'
             f.write(f"| {token['type']} | {token['value']} | {token['line']} | {ref} |\n")
 
         f.write("\n## Tabela de Símbolos\n\n")  # Subtítulo para a tabela de símbolos
-        f.write("Esta tabela apresenta a contagem de ocorrências e as linhas onde cada símbolo é utilizado.\n\n")
+        f.write("Esta tabela contém a lista de todos os símbolos identificados no código analisado.\n\n")
         f.write("| Symbol | Occurrences | Lines |\n")
         f.write("|--------|-------------|-------|\n")
-        # Adiciona símbolos à tabela no markdown
+        # Adiciona a tabela de símbolos ao markdown
         for symbol, data in symbol_table.items():
             f.write(f"| {symbol} | {data['count']} | {', '.join(map(str, data['lines']))} |\n")
-    
-    print()
-    print(f"Arquivo Markdown '{markdown_file_path}' gerado com sucesso!")  # Mensagem de sucesso na geração do arquivo
+
+    print()  # Adiciona uma linha em branco
+    print(f"O relatório markdown foi gerado em '{markdown_file_path}'.")  # Mensagem confirmando a geração do relatório
 
 if __name__ == "__main__":
-    code = None  # Inicializa a variável de código como None
-    while code is None:  # Laço para garantir que o código seja lido corretamente
-        print()
-        file_path = input("Digite o caminho do arquivo .java: ").strip()  # Solicita o caminho do arquivo
-        
-        if file_path:  # Verifica se o caminho não está vazio
-            code = read_java_file(file_path)  # Lê o arquivo
-        else:
-            print()
-            print("O caminho do arquivo não pode estar vazio. Por favor, insira um caminho válido.")  # Mensagem de erro
+    code = None  # Inicializa a variável code como None
+    # Solicita ao usuário o caminho de um arquivo Java até que um caminho válido seja fornecido
+    while code is None:
+        print()  # Adiciona uma linha em branco
+        file_path = input("Por favor, insira o caminho do arquivo Java: ")
+        code = read_java_file(file_path)  # Lê o arquivo
 
     symbol_table = {}  # Inicializa a tabela de símbolos
-
     tokens = tokenize(code, symbol_table)  # Tokeniza o código
-
-    print() 
-    print_tokens(tokens)  # Imprime a lista de tokens
-
-    print()
+    print_tokens(tokens)  # Imprime os tokens
     print_symbol_table(symbol_table)  # Imprime a tabela de símbolos
-
-    print()
-    generate_file = input("Deseja gerar um arquivo com a lista de tokens e a tabela de símbolos? (s/n): ").strip().lower()  # Pergunta ao usuário se deseja gerar arquivo
-    if generate_file == 's':
+    
+    print()  # Adiciona uma linha em branco
+    
+    # Gera o markdown se o usuário desejar
+    generate_markdown_option = input("Deseja gerar um relatório markdown? (s/n): ").strip().lower()
+    if generate_markdown_option == 's':
         generate_markdown(tokens, symbol_table)  # Gera o arquivo markdown
