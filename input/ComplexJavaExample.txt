@@ -1,0 +1,57 @@
+// Complex Java Code Example
+public class ComplexExample {
+    
+    // Attributes
+    private int counter = 0;
+    private static final double PI = 3.1415;
+    private boolean isActive = true;
+
+    // Main method
+    public static void main(String[] args) {
+        ComplexExample example = new ComplexExample();
+        example.process();
+    }
+
+    // Constructor
+    public ComplexExample() {
+        this.counter = 10;
+    }
+
+    // Process method with complex logic
+    public void process() {
+        String message = "Hello, World!";
+        System.out.println(message);
+        
+        for (int i = 0; i < counter; i++) {
+            if (i % 2 == 0) {
+                System.out.println("Even: " + i);
+            } else {
+                System.out.println("Odd: " + i);
+            }
+        }
+
+        switch (counter) {
+            case 10:
+                System.out.println("Counter is 10");
+                break;
+            case 20:
+                System.out.println("Counter is 20");
+                break;
+            default:
+                System.out.println("Counter is neither 10 nor 20");
+        }
+
+        try {
+            double result = calculateArea(PI, 5.0);
+            System.out.println("Area: " + result);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Method to calculate area of a circle
+    private double calculateArea(double pi, double radius) throws IllegalArgumentException {
+        if (radius < 0) throw new IllegalArgumentException("Radius must be positive");
+        return pi * radius * radius;
+    }
+}

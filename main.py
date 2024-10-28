@@ -21,7 +21,7 @@ def tokenize(code, symbol_table):
     line_number = 1  # Contador de linhas
     # Definição das especificações de tokens com expressões regulares
     token_specification = [
-        ('KEYWORD', r'\b(?:public|class|static|void|int|float|boolean|double|char|if|else|while|for|return|switch|case|default|break|continue|synchronized|this|super)\b'),
+        ('KEYWORD', r'\b(?:public|private|class|static|void|int|float|boolean|double|char|if|else|while|for|return|switch|case|default|break|continue|synchronized|this|super)\b'),
         ('ANNOTATION', r'@\w+'),  # Anotações
         ('BOOLEAN', r'\b(?:true|false)\b'),  # Valores booleanos
         ('IDENTIFIER', r'[A-Za-z_]\w*'),  # Identificadores
@@ -30,7 +30,7 @@ def tokenize(code, symbol_table):
         ('STRING', r'"[^"\\]*(?:\\.[^"\\]*)*"'),  # Strings
         ('COMMENT', r'//.*|/\*[\s\S]*?\*/'),  # Comentários
         ('OPERATOR', r'(<|>|<=|>=|==|!=|[+*/=%\-]|&&|\|\|)'),  # Operadores
-        ('DELIMITER', r'[{};,()]'),  # Delimitadores
+        ('DELIMITER', r'[{};,():]'),  # Delimitadores, incluindo dois pontos
         ('DOT', r'\.'),  # Ponto
         ('BRACKET', r'[\[\]]'),  # Colchetes
         ('SKIP', r'[ \t]+'),  # Espaços em branco
@@ -140,9 +140,9 @@ def print_symbol_table(symbol_table):
     print()
     print(tabulate(symbol_list, headers=["Symbol", "Occurrences", "Lines"], tablefmt="fancy_grid"))
 
-def read_java_file(file_path):
+def read_text_file(file_path):
     """
-    Lê o conteúdo de um arquivo Java.
+    Lê o conteúdo de um arquivo de texto que contém código Java.
 
     Args:
         file_path (str): O caminho do arquivo a ser lido.
@@ -188,25 +188,25 @@ def generate_markdown(tokens, symbol_table):
             else:
                 ref = '-'
             f.write(f"| {token['type']} | {token['value']} | {token['line']} | {ref} |\n")
+        f.write("\n")
 
-        f.write("\n## Tabela de Símbolos\n\n")  # Subtítulo para a tabela de símbolos
-        f.write("Esta tabela contém a lista de todos os símbolos identificados no código analisado.\n\n")
+        f.write("## Tabela de Símbolos\n\n")  # Subtítulo para a tabela de símbolos
+        f.write("Esta tabela contém a lista de todos os identificadores encontrados e suas ocorrências.\n\n")
         f.write("| Symbol | Occurrences | Lines |\n")
         f.write("|--------|-------------|-------|\n")
-        # Adiciona a tabela de símbolos ao markdown
+        # Adiciona símbolos à tabela no markdown
         for symbol, data in symbol_table.items():
             f.write(f"| {symbol} | {data['count']} | {', '.join(map(str, data['lines']))} |\n")
+    print(f"Relatório Markdown gerado: {markdown_file_path}")
 
-    print()  # Adiciona uma linha em branco
-    print(f"O relatório markdown foi gerado em '{markdown_file_path}'.")  # Mensagem confirmando a geração do relatório
-
+# Bloco principal
 if __name__ == "__main__":
     code = None  # Inicializa a variável code como None
-    # Solicita ao usuário o caminho de um arquivo Java até que um caminho válido seja fornecido
+    # Solicita ao usuário o caminho de um arquivo .txt até que um caminho válido seja fornecido
     while code is None:
         print()  # Adiciona uma linha em branco
-        file_path = input("Por favor, insira o caminho do arquivo Java: ")
-        code = read_java_file(file_path)  # Lê o arquivo
+        file_path = input("Por favor, insira o caminho do arquivo de texto (.txt) contendo o código Java: ")
+        code = read_text_file(file_path)  # Lê o arquivo
 
     symbol_table = {}  # Inicializa a tabela de símbolos
     tokens = tokenize(code, symbol_table)  # Tokeniza o código
